@@ -155,17 +155,21 @@ synchronized不需要显示的获取和释放锁，简单
 
 ## 4.线程池
 
-#### 参数
+#### 4.1 参数
 
- 1)corePoolSize：
+#####  1)corePoolSize：
 
 线程池的基本大小，当提交一个任务到线程池中，线程池会创建一个线程来执行任务，即使其他空闲的基本线程能够执行新任务也会创建新的线程，等到需要执行的任务数大于线程池基本大小就不再创建，如果调用了线程池的prestartAllCoreTheads方法，线程池会提交会启动所有基本线程
 
- 2)maximumPoolSize：
+#####   2)maximumPoolSize：
 
-线程池最大大小，线程池允许创建最大的线程数，如果队列满了，并且已创建的线程数小于最大线程数，则线程池会再创建新的线程执行任务 如果使用了无界队列这个参数就没啥效果 3)runableTaskQueue任务队列，用于保存等待队列的阻塞队列fifo ArrayBlockQueue LinkedBlockQueue synchronousQueue 
+线程池最大大小，线程池允许创建最大的线程数，如果队列满了，并且已创建的线程数小于最大线程数，则线程池会再创建新的线程执行任务 如果使用了无界队列这个参数就没啥效果 
 
-4)RejectedExecutionHandler
+#####  3)runableTaskQueue
+
+任务队列，用于保存等待队列的阻塞队列fifo ArrayBlockQueue LinkedBlockQueue synchronousQueue 
+
+#####  4)RejectedExecutionHandler
 
  饱和策略 当队列和线程池都满了说明线程处于饱和状态 
 
@@ -177,19 +181,21 @@ DiscardPolicy 不处理 丢弃掉
 
 DiscardOldestPolicy丢弃队列中最近的一个任务，并执行当前任务 
 
-5)ThreadFactory 用于生产线程
+#####  5)ThreadFactory 用于生产线程
 
-#### a.java中线程池是如何实现?
+#### 4.3.java中线程池是如何实现?
 
 所谓线程池被抽象成一个worker，它是基于AQS实现，存放在一个new HashSet<Worker> 成员变量中 则把需要执行的任务放在成员变量中BlockQueue<Runnable> workQueue, 大致就是从workQueue中不断取任务放在worker中执行
 
-#### b.线程池中的线程是怎么创建的 ？ 是 一 开 始 就 随 着 线 程 池 的 启 动创 建 好 的 吗?
+#### 4.4.线程池中的线程是怎么创建的 ？ 
+
+ 是 一 开 始 就 随 着 线 程 池 的 启 动创 建 好 的 吗?
 
 线程池默认是不启动的，work等待所有请求才会启动 每当我们调用execute（）方法添加一个任务，线程池会执行如下判断： 如果正在运行的线程池数据小于corePoolSize，那么会马上创建线程执行，即使存在有空闲的worker,如果大于，则将这个任务放在任务队列中，如果队列也满了，并且小于maximunPoolSize，则会创建非核心线程立刻运行这个任务，如果大于maximunPoolSize,那么线程池会抛出异常，RejectExecutionException。 当一个线程完成时，它会从队列中取下一个任务来执行，当一个线程无事可做，超过设置keepAliveTime，并且大于corePoolSize，那么这个线程就会被停掉，所以线程池所有任务完成后，它最后会收缩到corepoolSize
 
-#### c.jdk自带线程池
+#### 4.5.jdk自带线程池
 
-##### (1） SingleThreadExecutor:
+##### (1)SingleThreadExecutor:
 
 corepoolsize为1，maximunPoolsize为1 keepAliveTime 0,workQueue new LinkBlockingQueue<Runnable>() 无界队列
 
@@ -197,23 +203,62 @@ corepoolsize为1，maximunPoolsize为1 keepAliveTime 0,workQueue new LinkBlockin
 
 corepoolsize为x，maximunPoolsize为x keepAliveTime 0,workQueue new LinkBlockingQueue<Runnable>() 无界队列
 
-##### (3)	CachedThreadPool
+##### (3)CachedThreadPool
 
 corepoolsize为0，maximunPoolsize为Interger.MAX_VALUE， keepAliveTime 60,workQueue new SynchronousQueue<Runnable>() 零界队列
 
-##### （4）ScheduledThreadPool
+##### (4)ScheduledThreadPool
 
 corepoolsize为0，maximunPoolsize为Interger.MAX_VALUE， keepAliveTime DEFAULT_KEEPALIVE_MILLIS
 
 ,workQueue new  DelayedWorkQueue(<Runnable>() 零界队列
 
-##### （5）newWorkStealingPool
+##### (5)newWorkStealingPool
 
 是jdk1.8才有的，会根据所需的并行层次来动态创建和关闭线程，通过使用多个队列减少竞争，底层用的 ForkJoinPool来实现的。ForkJoinPool 的优势在于，可以充分利用多cpu，多核cpu的优势，把一个任务拆分成多个“小任务”，把多个“小任务”放到多个处理器核心上并行执行；当多个“小任务”执行完成之后，再将这些执行结果合并起来即可
 
-#### d.如 何 在 Java 线 程 池 中 提 交 线 程 ？
+#### 4.6.如 何 在 Java 线 程 池 中 提 交 线 程 
 
 1.execute()runnable 2.submit() callable
+
+#### 4.7 实际运用-spring线程池
+
+```
+@Configuration
+public class TaskExecutorConfig {
+
+    @Bean
+    public ThreadPoolTaskExecutor getThreadPool() {
+        ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
+        pool.setCorePoolSize(2);
+        pool.setMaxPoolSize(32);
+        pool.setKeepAliveSeconds(100);
+        //缓存队列满 新建线程
+        // pool.setQueueCapacity(0);
+        //  pool.setThreadNamePrefix("test2-");
+        //ThreadFactoryBuilder
+        pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        ThreadFactoryBuilder threadFactory = new ThreadFactoryBuilder();
+        threadFactory.setUncaughtExceptionHandler(new ExceptHand());
+        threadFactory.setNameFormat("google-gauava%d");
+
+        pool.setThreadFactory(threadFactory.build());
+        pool.initialize();
+        return pool;
+    }
+
+    class ExceptHand implements Thread.UncaughtExceptionHandler {
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            System.out.println("线程处理异常退出");
+        }
+    }
+
+```
+使用guava设置守护进程、错误处理器、线程名字,不用ThreadFactoryBuilder的时候 我们这么写代码。我们每次要新建一个类来实现ThreadFactory,有点繁琐
+
+
 
 
 
