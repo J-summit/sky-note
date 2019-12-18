@@ -27,4 +27,73 @@ BeanFactory,ApplicationContext
 - InitializingBean：自定义初始化。
 - BeanNameAware：设置 beanName 的 Aware 接口。
 
+#### 接口Aware
+
+```
+org.springframework.context.support.ApplicationContextAwareProcessor
+
+	private void invokeAwareInterfaces(Object bean) {
+		if (bean instanceof Aware) {
+			if (bean instanceof EnvironmentAware) {
+				((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
+			}
+			if (bean instanceof EmbeddedValueResolverAware) {
+				((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(this.embeddedValueResolver);
+			}
+			if (bean instanceof ResourceLoaderAware) {
+				((ResourceLoaderAware) bean).setResourceLoader(this.applicationContext);
+			}
+			if (bean instanceof ApplicationEventPublisherAware) {
+				((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(this.applicationContext);
+			}
+			if (bean instanceof MessageSourceAware) {
+				((MessageSourceAware) bean).setMessageSource(this.applicationContext);
+			}
+			if (bean instanceof ApplicationContextAware) {
+				((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
+			}
+		}
+	}
+```
+
+
+
+## 2.AOP
+
+源码阅读
+
+```
+@EnableAspectJAutoProxy
+@Import(AspectJAutoProxyRegistrar.class)
+implements ImportBeanDefinitionRegistrar
+		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
+
+```
+
+```
+org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator 核心
+extends ProxyProcessorSupport
+		implements SmartInstantiationAwareBeanPostProcessor, BeanFactoryAware 
+1.继承ProxyProcessorSupport 
+1.1 实现Ordered,aop调用顺序
+2.实现SmartInstantiationAwareBeanPostProcessor bean后置处理器
+3.实现BeanFactoryAware 获得beanFactory
+```
+
+AOP（Aspect Oriented Programming）面向切面编程，oop （Object oriented Programming）面向对象编程
+
+
+
+### 1.Aspect-切面
+
+@Aspect，定义该类是个切面，
+
+### 2.Advice 增强
+
+### 3.join point 连接点
+
+### 4.point cut 切点
+
+区别，所有方法执行都可看做join point，而point cut是一个描述信息，看哪些join point可以被植入Advice
+
 ### 3.spring 事务

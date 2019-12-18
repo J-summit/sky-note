@@ -289,7 +289,7 @@ slow.log日志信息
 SET timestamp=1571494386;
 SELECT * FROM `mysky`.`te` LIMIT 0;
 第一行:执行时间;
-第二行:用户、ip、线程id;
+第二行:用户、ip、线程id; 	
 第三行:query_time查询花费时间，获得锁的时间，获得结果行数，扫描数据行数;
 第四行:具体执行时间;
 第五行:执行sql语句;
